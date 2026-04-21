@@ -12,14 +12,26 @@
     <!-- Search Bar -->
     <div class="search-container">
       <i class="fas fa-search search-icon"></i>
-      <input type="text" class="search-input" id="foodSearch" placeholder="Search Indian foods... (e.g. rice, dal, paneer)" autocomplete="off">
+      <input type="text" class="search-input" id="foodSearch" placeholder="Search 250+ local + 3M global foods... (e.g. pizza, sushi, dal)" autocomplete="off">
       <div class="quick-chips">
         <button class="chip" data-food="rice">Rice 🍚</button>
         <button class="chip" data-food="roti">Roti 🫓</button>
         <button class="chip" data-food="dal">Dal 🥣</button>
         <button class="chip" data-food="egg">Egg 🥚</button>
-        <button class="chip" data-food="banana">Fruit 🍎</button>
+        <button class="chip" data-food="chicken">Chicken 🍗</button>
+        <button class="chip" data-food="pizza">Pizza 🍕</button>
+        <button class="chip" data-food="pasta">Pasta 🍝</button>
         <button class="chip" data-food="samosa">Snack 🍿</button>
+      </div>
+    </div>
+
+    <!-- Online Search Results (appears when typing) -->
+    <div id="onlineResults" style="display:none;margin-top:16px;">
+      <div class="card" style="border:2px solid var(--green);border-radius:16px;">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, #1565C0, #0D47A1);font-size:0.9rem;padding:12px 20px;">
+          🌍 Global Food Database (3 Million+ items) &mdash; <span id="onlineCount">0</span> results
+        </div>
+        <div class="card-body" id="onlineResultsList" style="padding:12px;"></div>
       </div>
     </div>
 
@@ -146,16 +158,67 @@
   const searchInput = document.getElementById('foodSearch');
   const popup = document.getElementById('nutritionPopup');
   const qtyInput = document.getElementById('popupQty');
+  const onlineDiv = document.getElementById('onlineResults');
+  const onlineList = document.getElementById('onlineResultsList');
+  const onlineCount = document.getElementById('onlineCount');
   let selectedItem = null;
+  let searchTimer = null;
 
-  // Search filter
+  // Search filter (local + online)
   searchInput.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
+    // Filter local items
     foodItems.forEach(item => {
       const name = item.dataset.name;
       item.style.display = name.includes(q) ? 'flex' : 'none';
     });
+    // Online search with debounce
+    clearTimeout(searchTimer);
+    if (q.length >= 3) {
+      searchTimer = setTimeout(() => searchOnline(q), 600);
+    } else {
+      onlineDiv.style.display = 'none';
+    }
   });
+
+  // Online search via Open Food Facts
+  async function searchOnline(query) {
+    onlineDiv.style.display = 'block';
+    onlineList.innerHTML = '<div style="text-align:center;padding:20px;color:#888;"><i class="fas fa-spinner fa-spin"></i> Searching 3M+ foods worldwide...</div>';
+    onlineCount.textContent = '...';
+    try {
+      const res = await fetch(`/api/search-food?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      const results = data.online || [];
+      onlineCount.textContent = results.length;
+      if (results.length === 0) {
+        onlineList.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">No global results found. Try a different search term.</div>';
+        return;
+      }
+      onlineList.innerHTML = '';
+      results.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'food-item';
+        div.dataset.name = item.name;
+        div.dataset.cal = item.cal;
+        div.dataset.protein = item.protein;
+        div.dataset.carbs = item.carbs;
+        div.dataset.fat = item.fat;
+        div.dataset.emoji = item.emoji;
+        div.innerHTML = `
+          <div class="food-emoji">${item.emoji}</div>
+          <div class="food-info">
+            <h4>${item.name}</h4>
+            <span>${item.cal} kcal / 100g &bull; <small style="color:#1565C0;">Global DB</small></span>
+          </div>
+        `;
+        div.addEventListener('click', () => selectFood(div));
+        onlineList.appendChild(div);
+      });
+    } catch(e) {
+      onlineList.innerHTML = '<div style="text-align:center;padding:20px;color:#888;">Search failed. Please try again.</div>';
+    }
+  }
 
   // Quick chips
   document.querySelectorAll('.chip').forEach(chip => {
@@ -167,25 +230,27 @@
     });
   });
 
-  // Select food item
+  // Select food item (local)
   foodItems.forEach(item => {
-    item.addEventListener('click', function() {
-      foodItems.forEach(i => i.classList.remove('selected'));
-      this.classList.add('selected');
-      selectedItem = {
-        name: this.dataset.name,
-        cal: parseFloat(this.dataset.cal),
-        protein: parseFloat(this.dataset.protein),
-        carbs: parseFloat(this.dataset.carbs),
-        fat: parseFloat(this.dataset.fat),
-        emoji: this.dataset.emoji
-      };
-      qtyInput.value = 100;
-      updatePopup();
-      popup.classList.add('show');
-      popup.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    });
+    item.addEventListener('click', function() { selectFood(this); });
   });
+
+  function selectFood(el) {
+    document.querySelectorAll('.food-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedItem = {
+      name: el.dataset.name,
+      cal: parseFloat(el.dataset.cal),
+      protein: parseFloat(el.dataset.protein),
+      carbs: parseFloat(el.dataset.carbs),
+      fat: parseFloat(el.dataset.fat),
+      emoji: el.dataset.emoji
+    };
+    qtyInput.value = 100;
+    updatePopup();
+    popup.classList.add('show');
+    popup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 
   // Update nutrition on qty change
   qtyInput.addEventListener('input', updatePopup);

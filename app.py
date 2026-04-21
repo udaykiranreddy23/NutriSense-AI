@@ -21,6 +21,7 @@ Security:
 import json
 import os
 import re
+import urllib.request
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -124,6 +125,37 @@ init_db()
 FOODS_DB_PATH = os.path.join(os.path.dirname(__file__), "data", "foods.json")
 with open(FOODS_DB_PATH, "r", encoding="utf-8") as f:
     FOODS_DB: Dict[str, Any] = json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Open Food Facts API (3 Million+ foods worldwide)
+# ---------------------------------------------------------------------------
+def search_open_food_facts(query: str, limit: int = 10) -> List[Dict]:
+    """Search Open Food Facts database for food items."""
+    try:
+        url = f"https://world.openfoodfacts.org/cgi/search.pl?search_terms={urllib.request.quote(query)}&search_simple=1&action=process&json=1&page_size={limit}"
+        req = urllib.request.Request(url, headers={"User-Agent": "NutriSenseAI/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        
+        results = []
+        for product in data.get("products", []):
+            name = product.get("product_name", "").strip()
+            nutrients = product.get("nutriments", {})
+            if not name or not nutrients:
+                continue
+            results.append({
+                "name": name[:60],
+                "cal": round(nutrients.get("energy-kcal_100g", 0)),
+                "protein": round(nutrients.get("proteins_100g", 0), 1),
+                "carbs": round(nutrients.get("carbohydrates_100g", 0), 1),
+                "fat": round(nutrients.get("fat_100g", 0), 1),
+                "emoji": "🌍",
+                "source": "openfoodfacts",
+            })
+        return results
+    except Exception:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -541,6 +573,33 @@ def log() -> str:
 def api_foods() -> Any:
     """REST API: Return the complete foods database as JSON."""
     return jsonify(FOODS_DB)
+
+
+@app.route("/api/search-food")
+def api_search_food() -> Any:
+    """Search for foods — local DB first, then Open Food Facts (3M+ items)."""
+    query = sanitize_string(request.args.get("q", ""), 100).lower()
+    if not query or len(query) < 2:
+        return jsonify({"local": [], "online": []})
+
+    # Search local DB
+    local = []
+    for name, data in FOODS_DB.items():
+        if query in name:
+            local.append({
+                "name": name,
+                "cal": data["cal"],
+                "protein": data["protein"],
+                "carbs": data["carbs"],
+                "fat": data["fat"],
+                "emoji": data.get("emoji", "🍽️"),
+                "source": "local",
+            })
+
+    # Search Open Food Facts API (3 million+ foods worldwide)
+    online = search_open_food_facts(query, limit=10)
+
+    return jsonify({"local": local[:20], "online": online})
 
 
 @app.route("/clear-log")
