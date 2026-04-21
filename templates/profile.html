@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Health Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>👤 Your Health Profile</h1>
+  <p>Set up your personalized nutrition plan</p>
+</div>
+
+<div class="form-section">
+  <div class="form-grid">
+    <!-- LEFT: Form -->
+    <div class="card fade-in">
+      <div class="card-header-bar">
+        <i class="fas fa-heartbeat"></i> Health Details
+      </div>
+      <div class="card-body">
+        <form method="POST" id="profileForm">
+          <div class="form-group">
+            <label class="form-label" for="name">Full Name</label>
+            <input class="form-input" type="text" id="name" name="name" placeholder="Enter your full name" value="{{ request.form.get('name', '') }}" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="age">Age</label>
+              <input class="form-input" type="number" id="age" name="age" placeholder="25" min="1" max="120" value="{{ request.form.get('age', '') }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="weight">Weight (kg)</label>
+              <input class="form-input" type="number" id="weight" name="weight" placeholder="70" min="20" max="300" step="0.1" value="{{ request.form.get('weight', '') }}" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="height">Height (cm)</label>
+            <input class="form-input" type="number" id="height" name="height" placeholder="170" min="50" max="250" value="{{ request.form.get('height', '') }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="goal">Health Goal</label>
+            <select class="form-select" id="goal" name="goal">
+              <option value="lose" {% if request.form.get('goal') == 'lose' %}selected{% endif %}>🔥 Weight Loss</option>
+              <option value="gain" {% if request.form.get('goal') == 'gain' %}selected{% endif %}>💪 Muscle Gain</option>
+              <option value="maintain" {% if request.form.get('goal') == 'maintain' or not request.form.get('goal') %}selected{% endif %}>⚖️ Maintain Weight</option>
+              <option value="diabetes" {% if request.form.get('goal') == 'diabetes' %}selected{% endif %}>🩺 Manage Diabetes</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="activity">Activity Level</label>
+            <select class="form-select" id="activity" name="activity">
+              <option value="sedentary" {% if request.form.get('activity') == 'sedentary' %}selected{% endif %}>🛋️ Sedentary</option>
+              <option value="light" {% if request.form.get('activity') == 'light' %}selected{% endif %}>🚶 Light Active</option>
+              <option value="moderate" {% if request.form.get('activity') == 'moderate' or not request.form.get('activity') %}selected{% endif %}>🏃 Moderate Active</option>
+              <option value="very_active" {% if request.form.get('activity') == 'very_active' %}selected{% endif %}>⚡ Very Active</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fas fa-calculator"></i> Calculate My Health →
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div>
+      {% if result and not result.error %}
+      <!-- BMI Card -->
+      <div class="result-card fade-in">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, #2196F3, #1565C0);">
+          <i class="fas fa-weight"></i> Your BMI
+        </div>
+        <div class="card-body bmi-display">
+          <div class="bmi-big" style="color:{% if result.bmi_cat == 'Normal' %}var(--green){% elif result.bmi_cat == 'Underweight' %}var(--yellow){% elif result.bmi_cat == 'Overweight' %}var(--orange){% else %}var(--red){% endif %};">{{ result.bmi }}</div>
+          <div class="bmi-meter">
+            <div class="bmi-indicator" style="left:{{ [[(result.bmi / 40) * 100, 0] | max, 100] | min }}%;"></div>
+          </div>
+          <div class="bmi-labels">
+            <span>Underweight</span>
+            <span>Normal</span>
+            <span>Overweight</span>
+            <span>Obese</span>
+          </div>
+          <div class="bmi-status {% if result.bmi_cat == 'Normal' %}bmi-normal{% elif result.bmi_cat == 'Underweight' %}bmi-under{% elif result.bmi_cat == 'Overweight' %}bmi-over{% else %}bmi-obese{% endif %}">
+            {{ result.bmi_cat }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Calories Card -->
+      <div class="result-card fade-in delay-1">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, var(--orange), #E65100);">
+          <i class="fas fa-fire"></i> Daily Calorie Target
+        </div>
+        <div class="card-body">
+          <div class="cal-big">{{ result.cal }}</div>
+          <div class="cal-label">calories / day</div>
+          <div class="pie-chart"></div>
+          <div class="pie-legend">
+            <span><span class="pie-dot" style="background:var(--purple)"></span> Carbs 50%</span>
+            <span><span class="pie-dot" style="background:var(--blue)"></span> Protein 25%</span>
+            <span><span class="pie-dot" style="background:#F57F17"></span> Fat 25%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Macro Targets -->
+      <div class="result-card fade-in delay-2">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, var(--green), var(--dark-green));">
+          <i class="fas fa-bullseye"></i> Macro Targets
+        </div>
+        <div class="card-body">
+          <div class="macro-grid">
+            <div class="macro-box protein">
+              <div class="macro-value">{{ result.protein }}g</div>
+              <div class="macro-label">💪 Protein</div>
+            </div>
+            <div class="macro-box carbs">
+              <div class="macro-value">{{ result.carbs }}g</div>
+              <div class="macro-label">🍞 Carbs</div>
+            </div>
+            <div class="macro-box fat">
+              <div class="macro-value">{{ result.fat }}g</div>
+              <div class="macro-label">🧈 Fat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Health Tips -->
+      <div class="result-card fade-in delay-3">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, #4CAF50, #2E7D32);">
+          <i class="fas fa-lightbulb"></i> Personalized Tips
+        </div>
+        <div class="card-body">
+          <ul class="tips-list">
+            {% for tip in result.tips %}
+            <li><i class="fas fa-check-circle"></i> {{ tip }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <a href="/log" class="btn btn-primary btn-block" style="margin-top:16px;">
+        🍽️ Start Logging Food →
+      </a>
+      {% elif result and result.error %}
+      <div class="result-card">
+        <div class="card-body" style="text-align:center;padding:40px;">
+          <p style="font-size:1.2rem;color:var(--red);">⚠️ {{ result.error }}</p>
+          <p style="color:#888;margin-top:8px;">Please check your inputs and try again.</p>
+        </div>
+      </div>
+      {% else %}
+      <div class="card" style="text-align:center;padding:60px 24px;">
+        <div style="font-size:4rem;margin-bottom:16px;">📊</div>
+        <h3 style="color:var(--dark-green);margin-bottom:8px;">Your results will appear here</h3>
+        <p style="color:#888;">Fill in your health details and click calculate</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

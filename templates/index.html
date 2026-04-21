@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- ========== HERO ========== -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🏆 AI-Powered Nutrition Tracking</div>
+    <h1>Eat Smart. Live Healthy. 🥗</h1>
+    <p>AI-powered nutrition tracking for a better you</p>
+    <div class="hero-buttons">
+      <a href="/profile" class="btn btn-primary">🚀 Get Started</a>
+      <a href="/summary" class="btn btn-secondary" style="background:rgba(255,255,255,0.15);color:white;border:2px solid rgba(255,255,255,0.4);">📊 View Demo</a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== STATS BAR ========== -->
+<section class="stats-bar">
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-icon">🍎</div>
+      <div class="stat-number" data-target="500">0</div>
+      <div class="stat-label">Foods in Database</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon">👥</div>
+      <div class="stat-number" data-target="10000">0</div>
+      <div class="stat-label">Happy Users</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-number" data-target="2000000">0</div>
+      <div class="stat-label">Calories Tracked</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-number" data-target="4.9" data-decimal="true">0</div>
+      <div class="stat-label">User Rating</div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FEATURES ========== -->
+<section class="section" style="background:white;">
+  <div class="container">
+    <h2 class="section-title">Everything You Need</h2>
+    <p class="section-subtitle">Comprehensive tools to take control of your nutrition and health journey</p>
+    <div class="features-grid">
+      <div class="card feature-card fade-in">
+        <div class="feature-icon green">🧑</div>
+        <h3>Smart Profile</h3>
+        <p>Personalized health goals & BMI tracking</p>
+      </div>
+      <div class="card feature-card fade-in delay-1">
+        <div class="feature-icon blue">🍱</div>
+        <h3>Food Logger</h3>
+        <p>Log meals instantly with nutrition data</p>
+      </div>
+      <div class="card feature-card fade-in delay-2">
+        <div class="feature-icon orange">💡</div>
+        <h3>AI Suggestions</h3>
+        <p>Smart meal ideas based on your goals</p>
+      </div>
+      <div class="card feature-card fade-in delay-3">
+        <div class="feature-icon purple">📊</div>
+        <h3>Health Dashboard</h3>
+        <p>Track progress with beautiful charts</p>
+      </div>
+      <div class="card feature-card fade-in delay-4">
+        <div class="feature-icon red">🏃</div>
+        <h3>Activity Tracker</h3>
+        <p>Monitor daily movement & calories burned</p>
+      </div>
+      <div class="card feature-card fade-in delay-4">
+        <div class="feature-icon cyan">💧</div>
+        <h3>Hydration Monitor</h3>
+        <p>Never forget to drink water again</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== HOW IT WORKS ========== -->
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">How It Works</h2>
+    <p class="section-subtitle">Get started in 3 simple steps</p>
+    <div class="steps-grid">
+      <div class="fade-in">
+        <div class="step-number">1</div>
+        <div class="step-title">Create Profile</div>
+        <div class="step-text">Enter your health details and set your goals</div>
+      </div>
+      <div class="fade-in delay-1">
+        <div class="step-number">2</div>
+        <div class="step-title">Log Your Food</div>
+        <div class="step-text">Search and log meals from our database</div>
+      </div>
+      <div class="fade-in delay-2">
+        <div class="step-number">3</div>
+        <div class="step-title">Get Healthier</div>
+        <div class="step-text">Follow personalized meal suggestions & track progress</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== FOOD SHOWCASE ========== -->
+<section class="section" style="background:white;">
+  <div class="container">
+    <h2 class="section-title">Explore Meals</h2>
+    <p class="section-subtitle">Discover healthy and delicious food options</p>
+  </div>
+  <div class="showcase-scroll">
+    <div class="showcase-card">
+      <img src="https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&h=250&fit=crop" alt="Healthy Breakfast" loading="lazy">
+      <div class="showcase-card-body">
+        <h4>🌅 Breakfast</h4>
+        <span>~200-350 kcal</span>
+      </div>
+    </div>
+    <div class="showcase-card">
+      <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=250&fit=crop" alt="Fresh Lunch" loading="lazy">
+      <div class="showcase-card-body">
+        <h4>☀️ Lunch</h4>
+        <span>~300-500 kcal</span>
+      </div>
+    </div>
+    <div class="showcase-card">
+      <img src="https://images.unsplash.com/photo-1559847844-5315695dadae?w=400&h=250&fit=crop" alt="Dinner" loading="lazy">
+      <div class="showcase-card-body">
+        <h4>🌙 Dinner</h4>
+        <span>~250-450 kcal</span>
+      </div>
+    </div>
+    <div class="showcase-card">
+      <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=250&fit=crop" alt="Snacks" loading="lazy">
+      <div class="showcase-card-body">
+        <h4>🍿 Snacks</h4>
+        <span>~100-200 kcal</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TESTIMONIALS ========== -->
+<section class="section">
+  <div class="container">
+    <h2 class="section-title">What Users Say</h2>
+    <p class="section-subtitle">Join thousands who transformed their health</p>
+    <div class="testimonials-grid">
+      <div class="card testimonial-card fade-in">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"Lost 5kg in 2 months! NutriSense made tracking calories effortless and even fun."</p>
+        <div class="testimonial-name">— Priya R.</div>
+      </div>
+      <div class="card testimonial-card fade-in delay-1">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"Best nutrition app ever! The Indian food database is exactly what I needed."</p>
+        <div class="testimonial-name">— Rahul K.</div>
+      </div>
+      <div class="card testimonial-card fade-in delay-2">
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testimonial-text">"Simple and effective! The meal suggestions are always spot on."</p>
+        <div class="testimonial-name">— Ananya S.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CTA ========== -->
+<section class="cta-section">
+  <h2>Ready to Transform Your Health? 🚀</h2>
+  <a href="/profile" class="btn" style="font-size:1.1rem;padding:16px 40px;">Start Your Journey →</a>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Animated count-up for stats
+  function animateCounters() {
+    document.querySelectorAll('.stat-number').forEach(el => {
+      const target = parseFloat(el.dataset.target);
+      const isDecimal = el.dataset.decimal === 'true';
+      const duration = 2000;
+      const start = performance.now();
+
+      function update(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const ease = 1 - Math.pow(1 - progress, 3); // ease out cubic
+        const current = target * ease;
+
+        if (isDecimal) {
+          el.textContent = current.toFixed(1);
+        } else if (target >= 1000000) {
+          el.textContent = (current / 1000000).toFixed(1) + 'M+';
+        } else if (target >= 1000) {
+          el.textContent = Math.round(current / 1000) + 'K+';
+        } else {
+          el.textContent = Math.round(current) + '+';
+        }
+
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    });
+  }
+
+  // Trigger on scroll into view
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        animateCounters();
+        statsObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+
+  const statsBar = document.querySelector('.stats-bar');
+  if (statsBar) statsObserver.observe(statsBar);
+
+  // Fade-in on scroll
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.fade-in').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'all 0.6s ease';
+    fadeObserver.observe(el);
+  });
+</script>
+{% endblock %}

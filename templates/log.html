@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Food Logger{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>🍽️ Food Logger</h1>
+  <p>Search, select, and log your meals</p>
+</div>
+
+<div class="section">
+  <div class="container">
+    <!-- Search Bar -->
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" class="search-input" id="foodSearch" placeholder="Search Indian foods... (e.g. rice, dal, paneer)" autocomplete="off">
+      <div class="quick-chips">
+        <button class="chip" data-food="rice">Rice 🍚</button>
+        <button class="chip" data-food="roti">Roti 🫓</button>
+        <button class="chip" data-food="dal">Dal 🥣</button>
+        <button class="chip" data-food="egg">Egg 🥚</button>
+        <button class="chip" data-food="banana">Fruit 🍎</button>
+        <button class="chip" data-food="samosa">Snack 🍿</button>
+      </div>
+    </div>
+
+    <!-- Food Grid -->
+    <div class="food-grid" id="foodGrid">
+      {% for name, item in foods.items() %}
+      <div class="food-item" data-name="{{ name }}" data-cal="{{ item.cal }}" data-protein="{{ item.protein }}" data-carbs="{{ item.carbs }}" data-fat="{{ item.fat }}" data-emoji="{{ item.emoji }}">
+        <div class="food-emoji">{{ item.emoji }}</div>
+        <div class="food-info">
+          <h4>{{ name }}</h4>
+          <span>{{ item.cal }} kcal / 100g</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Nutrition Preview Popup -->
+    <div class="nutrition-popup card" id="nutritionPopup">
+      <div class="card-body">
+        <div class="nutrition-emoji" id="popupEmoji">🍽️</div>
+        <h3 id="popupName" style="font-size:1.3rem;font-weight:700;color:var(--dark-green);margin-bottom:4px;text-transform:capitalize;">Select a food</h3>
+
+        <div style="margin:16px 0;">
+          <label class="form-label" style="text-align:center;">Quantity (grams)</label>
+          <input type="number" class="form-input" id="popupQty" value="100" min="10" step="10" style="max-width:200px;margin:0 auto;text-align:center;font-size:1.2rem;font-weight:700;">
+        </div>
+
+        <div class="nutrition-grid">
+          <div class="nutrition-box cal">
+            <div class="nutrition-box-value" id="popupCal" style="color:var(--orange);">0</div>
+            <div class="nutrition-box-label">🔥 Calories</div>
+          </div>
+          <div class="nutrition-box pro">
+            <div class="nutrition-box-value" id="popupProtein" style="color:var(--blue);">0g</div>
+            <div class="nutrition-box-label">💪 Protein</div>
+          </div>
+          <div class="nutrition-box carb">
+            <div class="nutrition-box-value" id="popupCarbs" style="color:var(--purple);">0g</div>
+            <div class="nutrition-box-label">🍞 Carbs</div>
+          </div>
+          <div class="nutrition-box fat-box">
+            <div class="nutrition-box-value" id="popupFat" style="color:#F57F17;">0g</div>
+            <div class="nutrition-box-label">🧈 Fat</div>
+          </div>
+        </div>
+
+        <form method="POST" id="addForm" style="margin-top:16px;">
+          <input type="hidden" name="food" id="hiddenFood">
+          <input type="hidden" name="qty" id="hiddenQty">
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fas fa-plus-circle"></i> Add to Log
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Today's Log Table -->
+    {% if log %}
+    <div class="card fade-in" style="margin-top:40px;">
+      <div class="card-header-bar">
+        <i class="fas fa-clipboard-list"></i> Today's Food Log
+        <a href="/clear-log" style="margin-left:auto;color:rgba(255,255,255,0.8);font-size:0.85rem;font-weight:500;">🗑️ Clear All</a>
+      </div>
+      <div class="card-body">
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Food</th>
+                <th>Qty (g)</th>
+                <th>Calories</th>
+                <th>Protein</th>
+                <th>Carbs</th>
+                <th>Fat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in log %}
+              <tr>
+                <td>{{ item.emoji }} {{ item.name | capitalize }}</td>
+                <td>{{ item.qty }}g</td>
+                <td style="color:var(--orange);font-weight:700;">{{ item.cal }}</td>
+                <td>{{ item.protein }}g</td>
+                <td>{{ item.carbs }}g</td>
+                <td>{{ item.fat }}g</td>
+              </tr>
+              {% endfor %}
+              <tr class="total-row">
+                <td>📊 TOTAL</td>
+                <td>—</td>
+                <td style="color:var(--orange);">{{ log | sum(attribute='cal') }}</td>
+                <td>{{ log | sum(attribute='protein') | round(1) }}g</td>
+                <td>{{ log | sum(attribute='carbs') | round(1) }}g</td>
+                <td>{{ log | sum(attribute='fat') | round(1) }}g</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="log-progress">
+          <div class="log-progress-header">
+            <span>🔥 Calories Progress</span>
+            <span>{{ total_cal }} / {{ target }} kcal</span>
+          </div>
+          <div class="log-progress-bar">
+            <div class="log-progress-fill" style="width:{{ [[((total_cal / target) * 100), 0] | max, 100] | min }}%;{% if total_cal > target %}background:linear-gradient(90deg, var(--orange), var(--red));{% endif %}"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const foodItems = document.querySelectorAll('.food-item');
+  const searchInput = document.getElementById('foodSearch');
+  const popup = document.getElementById('nutritionPopup');
+  const qtyInput = document.getElementById('popupQty');
+  let selectedItem = null;
+
+  // Search filter
+  searchInput.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    foodItems.forEach(item => {
+      const name = item.dataset.name;
+      item.style.display = name.includes(q) ? 'flex' : 'none';
+    });
+  });
+
+  // Quick chips
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      searchInput.value = this.dataset.food;
+      searchInput.dispatchEvent(new Event('input'));
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // Select food item
+  foodItems.forEach(item => {
+    item.addEventListener('click', function() {
+      foodItems.forEach(i => i.classList.remove('selected'));
+      this.classList.add('selected');
+      selectedItem = {
+        name: this.dataset.name,
+        cal: parseFloat(this.dataset.cal),
+        protein: parseFloat(this.dataset.protein),
+        carbs: parseFloat(this.dataset.carbs),
+        fat: parseFloat(this.dataset.fat),
+        emoji: this.dataset.emoji
+      };
+      qtyInput.value = 100;
+      updatePopup();
+      popup.classList.add('show');
+      popup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // Update nutrition on qty change
+  qtyInput.addEventListener('input', updatePopup);
+
+  function updatePopup() {
+    if (!selectedItem) return;
+    const factor = parseFloat(qtyInput.value) / 100;
+    document.getElementById('popupEmoji').textContent = selectedItem.emoji;
+    document.getElementById('popupName').textContent = selectedItem.name;
+    document.getElementById('popupCal').textContent = Math.round(selectedItem.cal * factor);
+    document.getElementById('popupProtein').textContent = (selectedItem.protein * factor).toFixed(1) + 'g';
+    document.getElementById('popupCarbs').textContent = (selectedItem.carbs * factor).toFixed(1) + 'g';
+    document.getElementById('popupFat').textContent = (selectedItem.fat * factor).toFixed(1) + 'g';
+    document.getElementById('hiddenFood').value = selectedItem.name;
+    document.getElementById('hiddenQty').value = qtyInput.value;
+  }
+})();
+</script>
+{% endblock %}

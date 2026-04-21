@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}NutriSense AI{% endblock %} — Smart Food & Health Companion</title>
+  <meta name="description" content="NutriSense AI is an AI-powered nutrition tracking app. Log meals, calculate BMI, get personalized meal suggestions, and monitor your daily health progress.">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥗</text></svg>">
+</head>
+<body>
+  <!-- ========== NAVBAR ========== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="nav-logo">🥗</span>
+        <span class="nav-title">NutriSense <span class="nav-ai">AI</span></span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+      </button>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}"><i class="fas fa-user"></i> Profile</a></li>
+        <li><a href="/log" class="nav-link {% if request.path == '/log' %}active{% endif %}"><i class="fas fa-utensils"></i> Food Log</a></li>
+        <li><a href="/suggest" class="nav-link {% if request.path == '/suggest' %}active{% endif %}"><i class="fas fa-lightbulb"></i> Suggestions</a></li>
+        <li><a href="/summary" class="nav-link {% if request.path == '/summary' %}active{% endif %}"><i class="fas fa-chart-pie"></i> Summary</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <span class="footer-logo">🥗</span>
+        <span>NutriSense AI</span>
+      </div>
+      <p class="footer-text">Made with ❤️ for a healthier world</p>
+      <div class="footer-socials">
+        <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+      </div>
+      <p class="footer-copy">&copy; 2026 NutriSense AI. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ========== NAV SCROLL + MOBILE TOGGLE ========== -->
+  <script>
+    // Sticky navbar background on scroll
+    window.addEventListener('scroll', function() {
+      document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+    });
+    // Fire once on load
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+
+    // Mobile hamburger
+    document.getElementById('navToggle').addEventListener('click', function() {
+      document.getElementById('navLinks').classList.toggle('show');
+    });
+    // Close menu on link click (mobile)
+    document.querySelectorAll('.nav-link').forEach(function(link) {
+      link.addEventListener('click', function() {
+        document.getElementById('navLinks').classList.remove('show');
+      });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

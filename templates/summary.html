@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- ========== DASHBOARD HEADER ========== -->
+<div class="dashboard-header">
+  <div class="dashboard-greeting" id="dashGreeting">
+    Good Afternoon, {{ user_name }}! 🏆
+  </div>
+  <div class="dashboard-date" id="currentDate"></div>
+</div>
+
+<!-- ========== HEALTH SCORE ========== -->
+<div class="section" style="padding-top:20px;">
+  <div class="container">
+    <div class="score-section card" style="padding:40px;">
+      <h3 style="text-align:center;color:var(--dark-green);margin-bottom:20px;font-size:1.2rem;">Your Health Score Today</h3>
+      <div class="score-ring" id="scoreRing">
+        <div class="score-inner">
+          <div class="score-number" id="scoreNumber" style="color:{% if score > 70 %}var(--green){% elif score > 40 %}var(--yellow){% else %}var(--red){% endif %}">{{ score }}</div>
+          <div class="score-label">/ 100</div>
+        </div>
+      </div>
+      <p class="score-message" style="margin-top:16px;">
+        {% if score >= 80 %}🎉 Excellent! You're doing amazing today!
+        {% elif score >= 60 %}💪 Good progress! Keep it up!
+        {% elif score >= 40 %}🍽️ You're getting there — log more meals!
+        {% elif score > 0 %}⚡ Just getting started — keep logging!
+        {% else %}📝 Start logging food to see your score!
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- ========== 4 STAT CARDS ========== -->
+    <div class="dash-stats">
+      <div class="dash-stat card fade-in">
+        <div class="dash-stat-icon">🔥</div>
+        <div class="dash-stat-value">{{ total_cal }} <span style="font-size:0.8rem;color:#888;">/ {{ target }}</span></div>
+        <div class="dash-stat-label">Calories</div>
+      </div>
+      <div class="dash-stat card fade-in delay-1">
+        <div class="dash-stat-icon">💧</div>
+        <div class="dash-stat-value" id="waterCount">{{ water }}</div>
+        <div class="dash-stat-label">/ 8 Glasses</div>
+      </div>
+      <div class="dash-stat card fade-in delay-2">
+        <div class="dash-stat-icon">🥗</div>
+        <div class="dash-stat-value">{{ log | length }}</div>
+        <div class="dash-stat-label">Meals Logged</div>
+      </div>
+      <div class="dash-stat card fade-in delay-3">
+        <div class="dash-stat-icon">⚡</div>
+        <div class="dash-stat-value">{{ log | length if log | length <= 7 else 7 }}</div>
+        <div class="dash-stat-label">Day Streak</div>
+      </div>
+    </div>
+
+    <!-- ========== CALORIE PROGRESS ========== -->
+    <div class="progress-section card fade-in" style="padding:28px;">
+      <h3 style="margin-bottom:16px;color:var(--dark-green);">🔥 Calorie Progress</h3>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span>Consumed</span>
+          <span>{{ total_cal }} / {{ target }} kcal</span>
+        </div>
+        <div class="progress-bar" style="height:16px;">
+          <div class="progress-fill {% if total_cal <= target %}green{% elif total_cal <= target * 1.2 %}orange{% else %}orange{% endif %}"
+               style="width:{{ [[((total_cal / target) * 100) if target > 0 else 0, 0] | max, 100] | min }}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== WATER TRACKER ========== -->
+    <div class="water-section card fade-in" style="padding:28px;">
+      <h3 style="color:var(--dark-green);margin-bottom:4px;">💧 Water Intake</h3>
+      <p style="color:#888;font-size:0.9rem;">Stay hydrated! Tap glasses to track</p>
+      <div class="water-glasses" id="waterGlasses">
+        {% for i in range(8) %}
+        <button class="water-glass-btn {% if i < water %}filled{% endif %}" data-index="{{ i }}">
+          🥛
+        </button>
+        {% endfor %}
+      </div>
+      <div class="water-text" id="waterText">{{ water }} / 8 glasses 💧</div>
+    </div>
+
+    <!-- ========== MACRO BREAKDOWN ========== -->
+    <div class="progress-section card fade-in" style="padding:28px;">
+      <h3 style="margin-bottom:18px;color:var(--dark-green);">📊 Macro Breakdown</h3>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span>💪 Protein</span>
+          <span>{{ protein }}g / {{ protein_target }}g</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill blue" style="width:{{ [[((protein / protein_target) * 100) if protein_target > 0 else 0, 0] | max, 100] | min }}%;"></div>
+        </div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span>🍞 Carbs</span>
+          <span>{{ carbs }}g / {{ carbs_target }}g</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill purple" style="width:{{ [[((carbs / carbs_target) * 100) if carbs_target > 0 else 0, 0] | max, 100] | min }}%;"></div>
+        </div>
+      </div>
+      <div class="progress-item">
+        <div class="progress-header">
+          <span>🧈 Fat</span>
+          <span>{{ fat }}g / {{ fat_target }}g</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill yellow" style="width:{{ [[((fat / fat_target) * 100) if fat_target > 0 else 0, 0] | max, 100] | min }}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ACTIVITY ========== -->
+    <div class="activity-card fade-in">
+      <div class="activity-icon">🏃</div>
+      <div class="activity-steps" id="stepCount">6,234</div>
+      <div class="activity-text">You've walked 4.2 km today!</div>
+    </div>
+
+    <!-- ========== WEEKLY CHART ========== -->
+    <div class="card fade-in" style="padding:28px;">
+      <h3 style="color:var(--dark-green);margin-bottom:4px;">📈 Weekly Overview</h3>
+      <p style="color:#888;font-size:0.85rem;margin-bottom:12px;">Calorie intake this week</p>
+      <div class="weekly-chart" id="weeklyChart">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- ========== HEALTH TIPS CAROUSEL ========== -->
+    <div class="card fade-in" style="padding:28px; margin-top:20px;">
+      <h3 style="color:var(--dark-green);margin-bottom:16px;text-align:center;">💡 Daily Health Tips</h3>
+      <div class="tips-carousel" id="tipsCarousel">
+        <div class="tip-slide">🥦 Eat more vegetables today</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  // Current date & greeting
+  const dateEl = document.getElementById('currentDate');
+  const greetEl = document.getElementById('dashGreeting');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    const h = now.getHours();
+    const period = h < 12 ? 'Morning' : h < 17 ? 'Afternoon' : h < 20 ? 'Evening' : 'Night';
+    if (greetEl) {
+      greetEl.innerHTML = 'Good ' + period + ', {{ user_name }}! 🏆';
+    }
+  }
+
+  // Health Score Ring animation
+  const score = {{ score }};
+  const ring = document.getElementById('scoreRing');
+  if (ring) {
+    const deg = (score / 100) * 360;
+    let color = '#F44336';
+    if (score > 70) color = '#00C853';
+    else if (score > 40) color = '#FFC107';
+    setTimeout(() => {
+      ring.style.background = `conic-gradient(${color} ${deg}deg, #e0e0e0 ${deg}deg)`;
+    }, 300);
+  }
+
+  // Water tracker
+  let waterCount = {{ water }};
+  const glasses = document.querySelectorAll('.water-glass-btn');
+  const waterText = document.getElementById('waterText');
+  const waterCountEl = document.getElementById('waterCount');
+
+  glasses.forEach((btn, idx) => {
+    btn.addEventListener('click', () => {
+      if (idx < waterCount) {
+        waterCount = idx;
+      } else {
+        waterCount = idx + 1;
+      }
+      glasses.forEach((g, i) => {
+        g.classList.toggle('filled', i < waterCount);
+      });
+      waterText.textContent = waterCount + ' / 8 glasses 💧';
+      waterCountEl.textContent = waterCount;
+
+      // Save to server
+      fetch('/update-water', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count: waterCount })
+      });
+    });
+  });
+
+  // Weekly chart
+  const chartEl = document.getElementById('weeklyChart');
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const today = new Date().getDay();
+  const todayCal = {{ total_cal }};
+  // Generate sample data for past days
+  const weekData = days.map((d, i) => {
+    const dayIdx = (i + 1) % 7; // Mon=1 ... Sun=0
+    if (dayIdx === today) return todayCal;
+    if (dayIdx > today || (today === 0 && dayIdx > 0)) return 0;
+    return Math.round(1200 + Math.random() * 800);
+  });
+
+  const maxCal = Math.max(...weekData, {{ target }});
+  chartEl.innerHTML = days.map((d, i) => {
+    const h = maxCal > 0 ? (weekData[i] / maxCal) * 160 : 0;
+    return `
+      <div class="chart-bar-wrap">
+        <div class="chart-bar-value">${weekData[i]}</div>
+        <div class="chart-bar" style="height:${h}px;"></div>
+        <div class="chart-bar-label">${d}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Tips carousel
+  const tips = [
+    "🥦 Eat more vegetables today",
+    "💧 Drink water before every meal",
+    "🚶 Take a 10 min walk after lunch",
+    "😴 Sleep 7-8 hours for best results",
+    "🍽️ Don't skip breakfast",
+    "🥗 Add a salad to your lunch",
+    "🧘 Practice mindful eating",
+    "🍎 Snack on fruits instead of chips"
+  ];
+  const carousel = document.getElementById('tipsCarousel');
+  let tipIdx = 0;
+  setInterval(() => {
+    tipIdx = (tipIdx + 1) % tips.length;
+    carousel.innerHTML = `<div class="tip-slide">${tips[tipIdx]}</div>`;
+  }, 5000);
+
+  // Fade-in on scroll
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'all 0.6s ease';
+    fadeObserver.observe(el);
+  });
+})();
+</script>
+{% endblock %}
