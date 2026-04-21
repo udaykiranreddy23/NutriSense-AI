@@ -61,6 +61,10 @@ from models import (
     delete_food_entry,
     get_water_today,
     update_water_today,
+    save_exercise_entry,
+    get_exercise_log_today,
+    get_exercise_stats,
+    delete_exercise_entry,
 )
 
 # ---------------------------------------------------------------------------
@@ -678,6 +682,192 @@ def update_water() -> Any:
     count = int(validate_number(str(data.get("count", 0)), 0, 8))
     update_water_today(current_user.id, count)
     return jsonify({"ok": True, "count": count})
+
+
+# ---------------------------------------------------------------------------
+# Exercise Database
+# ---------------------------------------------------------------------------
+EXERCISES_DB = {
+    "walking": {"cal_per_min": 4, "emoji": "🚶", "category": "cardio"},
+    "running": {"cal_per_min": 11, "emoji": "🏃", "category": "cardio"},
+    "jogging": {"cal_per_min": 8, "emoji": "🏃", "category": "cardio"},
+    "cycling": {"cal_per_min": 8, "emoji": "🚴", "category": "cardio"},
+    "swimming": {"cal_per_min": 10, "emoji": "🏊", "category": "cardio"},
+    "jump rope": {"cal_per_min": 12, "emoji": "⏭️", "category": "cardio"},
+    "dancing": {"cal_per_min": 7, "emoji": "💃", "category": "cardio"},
+    "hiking": {"cal_per_min": 7, "emoji": "🥾", "category": "cardio"},
+    "stair climbing": {"cal_per_min": 9, "emoji": "🪜", "category": "cardio"},
+    "elliptical": {"cal_per_min": 8, "emoji": "🏋️", "category": "cardio"},
+    "treadmill": {"cal_per_min": 10, "emoji": "🏃", "category": "cardio"},
+    "push ups": {"cal_per_min": 7, "emoji": "💪", "category": "strength"},
+    "pull ups": {"cal_per_min": 8, "emoji": "💪", "category": "strength"},
+    "squats": {"cal_per_min": 6, "emoji": "🦵", "category": "strength"},
+    "lunges": {"cal_per_min": 6, "emoji": "🦵", "category": "strength"},
+    "plank": {"cal_per_min": 4, "emoji": "🧘", "category": "strength"},
+    "deadlift": {"cal_per_min": 8, "emoji": "🏋️", "category": "strength"},
+    "bench press": {"cal_per_min": 7, "emoji": "🏋️", "category": "strength"},
+    "bicep curls": {"cal_per_min": 5, "emoji": "💪", "category": "strength"},
+    "weight training": {"cal_per_min": 7, "emoji": "🏋️", "category": "strength"},
+    "crunches": {"cal_per_min": 5, "emoji": "🔥", "category": "strength"},
+    "burpees": {"cal_per_min": 10, "emoji": "🔥", "category": "hiit"},
+    "mountain climbers": {"cal_per_min": 9, "emoji": "🔥", "category": "hiit"},
+    "jumping jacks": {"cal_per_min": 8, "emoji": "⭐", "category": "hiit"},
+    "high knees": {"cal_per_min": 9, "emoji": "🔥", "category": "hiit"},
+    "box jumps": {"cal_per_min": 10, "emoji": "📦", "category": "hiit"},
+    "yoga": {"cal_per_min": 4, "emoji": "🧘", "category": "flexibility"},
+    "stretching": {"cal_per_min": 3, "emoji": "🤸", "category": "flexibility"},
+    "pilates": {"cal_per_min": 5, "emoji": "🧘", "category": "flexibility"},
+    "tai chi": {"cal_per_min": 4, "emoji": "🧘", "category": "flexibility"},
+    "badminton": {"cal_per_min": 7, "emoji": "🏸", "category": "sports"},
+    "cricket": {"cal_per_min": 5, "emoji": "🏏", "category": "sports"},
+    "football": {"cal_per_min": 9, "emoji": "⚽", "category": "sports"},
+    "basketball": {"cal_per_min": 8, "emoji": "🏀", "category": "sports"},
+    "tennis": {"cal_per_min": 8, "emoji": "🎾", "category": "sports"},
+    "table tennis": {"cal_per_min": 4, "emoji": "🏓", "category": "sports"},
+    "volleyball": {"cal_per_min": 5, "emoji": "🏐", "category": "sports"},
+    "kabaddi": {"cal_per_min": 10, "emoji": "🤼", "category": "sports"},
+    "boxing": {"cal_per_min": 11, "emoji": "🥊", "category": "sports"},
+    "martial arts": {"cal_per_min": 10, "emoji": "🥋", "category": "sports"},
+    "skipping": {"cal_per_min": 12, "emoji": "⏭️", "category": "cardio"},
+    "zumba": {"cal_per_min": 8, "emoji": "💃", "category": "cardio"},
+    "aerobics": {"cal_per_min": 7, "emoji": "💃", "category": "cardio"},
+    "gardening": {"cal_per_min": 4, "emoji": "🌱", "category": "lifestyle"},
+    "cleaning house": {"cal_per_min": 3, "emoji": "🧹", "category": "lifestyle"},
+    "cooking": {"cal_per_min": 2, "emoji": "👨‍🍳", "category": "lifestyle"},
+}
+
+
+# ---------------------------------------------------------------------------
+# Routes — Exercise Tracker
+# ---------------------------------------------------------------------------
+@app.route("/exercise", methods=["GET", "POST"])
+@login_required
+def exercise():
+    """Exercise tracking page."""
+    if request.method == "POST":
+        ex_name = sanitize_string(request.form.get("exercise", "")).lower()
+        duration = int(validate_number(request.form.get("duration", "30"), 1, 600, 30))
+
+        if ex_name in EXERCISES_DB:
+            ex = EXERCISES_DB[ex_name]
+            cal_burned = round(ex["cal_per_min"] * duration)
+            save_exercise_entry(
+                user_id=current_user.id,
+                exercise_name=ex_name,
+                duration=duration,
+                cal_burned=cal_burned,
+                category=ex["category"],
+            )
+            flash(f"Logged {ex_name} — {cal_burned} kcal burned! 🔥", "success")
+        else:
+            # Custom exercise
+            cal_burned = int(validate_number(request.form.get("cal_burned", "0"), 0, 5000))
+            if cal_burned > 0:
+                save_exercise_entry(
+                    user_id=current_user.id,
+                    exercise_name=ex_name or "custom exercise",
+                    duration=duration,
+                    cal_burned=cal_burned,
+                    category="custom",
+                )
+                flash(f"Logged custom exercise — {cal_burned} kcal burned! 🔥", "success")
+        return redirect(url_for("exercise"))
+
+    log_list = get_exercise_log_today(current_user.id)
+    stats = get_exercise_stats(current_user.id)
+
+    return render_template(
+        "exercise.html",
+        exercises=EXERCISES_DB,
+        log=log_list,
+        stats=stats,
+    )
+
+
+@app.route("/delete-exercise/<int:entry_id>")
+@login_required
+def delete_exercise_route(entry_id: int):
+    """Delete a specific exercise entry."""
+    delete_exercise_entry(entry_id, current_user.id)
+    return redirect(url_for("exercise"))
+
+
+@app.route("/api/exercises")
+def api_exercises():
+    """REST API: Return exercises database."""
+    return jsonify(EXERCISES_DB)
+
+
+# ---------------------------------------------------------------------------
+# Routes — AI Chatbot
+# ---------------------------------------------------------------------------
+CHATBOT_RESPONSES = {
+    "breakfast": "🌅 For breakfast try: Oats + banana + almonds (350 cal), Poha with peanuts (280 cal), or Idli + sambar (250 cal). These give sustained energy!",
+    "lunch": "☀️ For lunch try: Brown rice + dal + sabzi (450 cal), Roti + paneer + salad (400 cal), or Chicken curry + rice (500 cal). Balance protein & carbs!",
+    "dinner": "🌙 For dinner try: Khichdi + curd (350 cal), Roti + mixed veg (300 cal), or Grilled chicken + salad (350 cal). Keep dinner light!",
+    "snack": "🍿 Healthy snacks: Handful of almonds (160 cal), Apple + peanut butter (200 cal), Makhana (67 cal), or Greek yogurt + berries (150 cal).",
+    "lose weight": "🔥 To lose weight: 1) Create a 500 cal deficit daily, 2) Eat more protein (keeps you full), 3) Drink water before meals, 4) Avoid processed foods, 5) Exercise 30 min daily.",
+    "gain weight": "💪 To gain weight: 1) Eat 400-500 cal surplus daily, 2) Include nuts, ghee, and healthy fats, 3) Eat 5-6 meals a day, 4) Include protein shakes, 5) Strength train regularly.",
+    "protein": "💪 High protein foods: Paneer (18g/100g), Chicken breast (31g/100g), Eggs (6g each), Soya chunks (52g/100g), Dal (9g/100g), Greek yogurt (10g/100g), Tofu (8g/100g).",
+    "diabetes": "🩺 For diabetes: Choose low GI foods like brown rice, oats, whole wheat. Include bitter gourd, methi, and cinnamon. Avoid white rice, maida, and sugary drinks.",
+    "muscle": "🏋️ For muscle building: Eat 1.5-2g protein per kg body weight. Include eggs, chicken, paneer, soya chunks. Eat complex carbs before workout. Take whey protein post-workout.",
+    "iron": "🩸 Iron-rich foods: Spinach, dates, jaggery, beetroot, pomegranate, rajma, chana, ragi. Pair with vitamin C (lemon) for better absorption.",
+    "calcium": "🦴 Calcium-rich foods: Milk (120mg/100ml), Curd (83mg), Paneer (208mg), Ragi (344mg), Sesame seeds (975mg), Almonds (264mg). Essential for bones!",
+    "vitamin": "💊 Key vitamins: A - carrots, papaya | B12 - eggs, milk | C - orange, guava | D - sunlight, fish | E - almonds, sunflower seeds | K - spinach, broccoli.",
+    "water": "💧 Drink 8-10 glasses (2-3 liters) daily. More if exercising. Signs of dehydration: dark urine, headache, fatigue. Tip: Drink a glass before every meal!",
+    "fat": "🧈 Healthy fats: Avocado, nuts, olive oil, ghee (moderate), fish, flax seeds. Avoid: Trans fats, deep fried foods, margarine. Fat is essential — don't eliminate it!",
+    "fiber": "🥦 High fiber foods: Oats (10g/100g), Rajma (15g), Guava (5g), Apple with skin (2.4g), Whole wheat roti (3g), Brown rice (1.8g). Aim for 25-30g daily.",
+    "healthy": "🥗 General tips: 1) Eat colorful vegetables, 2) Include all food groups, 3) Drink enough water, 4) Exercise regularly, 5) Sleep 7-8 hours, 6) Manage stress.",
+    "exercise": "🏃 Exercise guide: Beginners - 30 min walking daily. Intermediate - Mix cardio + strength 4-5 days. Advanced - HIIT + weight training 5-6 days. Always warm up!",
+    "sleep": "😴 Better sleep: 1) No caffeine after 3 PM, 2) Eat dinner 2-3 hours before bed, 3) Drink warm turmeric milk, 4) Avoid screens 30 min before bed, 5) Keep room dark and cool.",
+    "stress": "🧘 Stress relief foods: Dark chocolate, almonds, bananas (magnesium), turmeric milk, green tea (L-theanine), curd (probiotics for gut-brain axis).",
+    "immunity": "🛡️ Boost immunity: Vitamin C (orange, amla), Zinc (pumpkin seeds), Turmeric, Ginger, Garlic, Yogurt (probiotics), Green tea. Sleep well and exercise regularly!",
+    "detox": "🌿 Natural detox: 1) Warm lemon water morning, 2) Green tea 2-3 cups, 3) Eat fiber-rich fruits, 4) Drink 3L water, 5) Avoid sugar and processed food for a week.",
+}
+
+
+@app.route("/chatbot")
+@login_required
+def chatbot():
+    """AI Nutrition Chatbot page."""
+    return render_template("chatbot.html")
+
+
+@app.route("/api/chat", methods=["POST"])
+@login_required
+def api_chat():
+    """Process chatbot messages."""
+    data = request.get_json(silent=True) or {}
+    message = sanitize_string(data.get("message", ""), 500).lower()
+
+    if not message:
+        return jsonify({"reply": "Please ask me something about nutrition! 🍎"})
+
+    # Find best matching response
+    best_match = None
+    best_score = 0
+    for keyword, response in CHATBOT_RESPONSES.items():
+        words = keyword.split()
+        score = sum(1 for w in words if w in message)
+        if score > best_score:
+            best_score = score
+            best_match = response
+
+    if best_match and best_score > 0:
+        reply = best_match
+    elif any(w in message for w in ["hi", "hello", "hey"]):
+        user = get_user_by_id(current_user.id)
+        reply = f"Hey {user['name']}! 👋 I'm your NutriSense AI assistant. Ask me about:\n\n🍳 Meal ideas (breakfast, lunch, dinner)\n💪 Protein sources\n🔥 Weight loss/gain tips\n🩺 Health conditions\n💧 Hydration\n🏃 Exercise advice"
+    elif any(w in message for w in ["thank", "thanks", "bye"]):
+        reply = "You're welcome! Stay healthy! 💚 Remember: Small daily improvements lead to stunning results! 🌟"
+    elif "calorie" in message or "how many" in message:
+        reply = "🔥 Calorie guide: Rice 130/100g, Roti 104 each, Dal 116/100g, Egg 78 each, Banana 89 each, Paneer 265/100g. Check your Food Logger for detailed tracking!"
+    elif "bmi" in message:
+        reply = "📊 BMI = weight(kg) / height(m)². Normal: 18.5-24.9, Underweight: <18.5, Overweight: 25-29.9, Obese: 30+. Go to your Profile page to calculate yours!"
+    else:
+        reply = "🤔 I'm not sure about that, but here are things I can help with:\n\n🍳 Meal suggestions (ask 'what for breakfast?')\n💪 Protein, iron, calcium sources\n🔥 Weight loss or gain tips\n🧘 Stress, sleep, immunity advice\n💧 Hydration tips\n🏃 Exercise guidance"
+
+    return jsonify({"reply": reply})
 
 
 # ---------------------------------------------------------------------------

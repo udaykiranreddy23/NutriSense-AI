@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}AI Chatbot{% endblock %}
+
+{% block content %}
+<div class="page-header" style="padding-bottom:40px;">
+  <h1>🤖 AI Nutrition Assistant</h1>
+  <p>Ask me anything about food, health & nutrition</p>
+</div>
+
+<div class="section" style="padding-top:20px;">
+  <div class="container" style="max-width:700px;">
+    <div class="card" style="border-radius:24px;overflow:hidden;">
+      <!-- Chat Header -->
+      <div class="card-header-bar" style="background:linear-gradient(135deg, #7C4DFF, #651FFF);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🤖</div>
+          <div>
+            <div style="font-weight:700;">NutriSense AI</div>
+            <div style="font-size:0.75rem;opacity:0.8;">🟢 Online — Ask me anything!</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="chatbot-messages" id="chatMessages">
+        <div class="chat-msg bot">
+          <div class="chat-avatar">🤖</div>
+          <div class="chat-bubble bot-bubble">
+            Hey! 👋 I'm your NutriSense AI assistant. I can help with:
+            <br><br>
+            🍳 <strong>Meal suggestions</strong> — "What should I eat for breakfast?"<br>
+            💪 <strong>Nutrition info</strong> — "What has high protein?"<br>
+            🔥 <strong>Weight tips</strong> — "How to lose weight?"<br>
+            🩺 <strong>Health advice</strong> — "Foods for diabetes"<br>
+            💧 <strong>Hydration</strong> — "How much water?"<br>
+            🏃 <strong>Exercise</strong> — "Exercise for beginners"<br>
+            <br>Just type your question below! 😊
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Suggestions -->
+      <div class="chat-suggestions" id="chatSuggestions">
+        <button class="chat-suggestion" data-msg="What should I eat for breakfast?">🌅 Breakfast ideas</button>
+        <button class="chat-suggestion" data-msg="How to lose weight?">🔥 Weight loss</button>
+        <button class="chat-suggestion" data-msg="What has high protein?">💪 Protein sources</button>
+        <button class="chat-suggestion" data-msg="How much water should I drink?">💧 Water intake</button>
+        <button class="chat-suggestion" data-msg="Foods to boost immunity">🛡️ Immunity</button>
+        <button class="chat-suggestion" data-msg="What should I eat for dinner?">🌙 Dinner ideas</button>
+        <button class="chat-suggestion" data-msg="Healthy snack options">🍿 Snacks</button>
+        <button class="chat-suggestion" data-msg="Exercise for beginners">🏃 Exercise</button>
+      </div>
+
+      <!-- Chat Input -->
+      <div class="chat-input-wrap">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Ask about nutrition, meals, health..." maxlength="500" autocomplete="off">
+        <button class="chat-send" id="chatSend">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .chatbot-messages {
+    height: 450px;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: #f8f9fa;
+  }
+  .chat-msg {
+    display: flex;
+    gap: 10px;
+    max-width: 85%;
+    animation: fadeInUp 0.3s ease;
+  }
+  .chat-msg.bot { align-self: flex-start; }
+  .chat-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .chat-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    background: #E8F5E9;
+  }
+  .chat-msg.user .chat-avatar {
+    background: linear-gradient(135deg, var(--green), var(--orange));
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+  .chat-bubble {
+    padding: 14px 18px;
+    border-radius: 18px;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-line;
+  }
+  .bot-bubble {
+    background: white;
+    color: #333;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .user-bubble {
+    background: linear-gradient(135deg, var(--green), var(--dark-green));
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-suggestions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 24px;
+    border-top: 1px solid #eee;
+    background: white;
+  }
+  .chat-suggestion {
+    padding: 8px 16px;
+    background: #F1F8E9;
+    border: 1px solid #C8E6C9;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font);
+    color: var(--dark-green);
+  }
+  .chat-suggestion:hover {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+    transform: translateY(-2px);
+  }
+  .chat-input-wrap {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-top: 1px solid #eee;
+    background: white;
+  }
+  .chat-input {
+    flex: 1;
+    padding: 14px 20px;
+    border: 2px solid #E8F5E9;
+    border-radius: 50px;
+    font-family: var(--font);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .chat-input:focus { border-color: var(--green); }
+  .chat-send {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green), var(--dark-green));
+    color: white; border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+  .chat-send:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(0,200,83,0.4); }
+  .typing-dots { display: inline-flex; gap: 4px; padding: 8px 0; }
+  .typing-dots span {
+    width: 8px; height: 8px; border-radius: 50%; background: #aaa;
+    animation: typingBounce 1.4s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-8px); }
+  }
+</style>
+
+<script>
+(function() {
+  const messages = document.getElementById('chatMessages');
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('chatSend');
+  const userInitial = '{{ current_user.data.name[0] | upper }}';
+
+  function addMessage(text, isUser) {
+    const div = document.createElement('div');
+    div.className = `chat-msg ${isUser ? 'user' : 'bot'}`;
+    div.innerHTML = `
+      <div class="chat-avatar">${isUser ? userInitial : '🤖'}</div>
+      <div class="chat-bubble ${isUser ? 'user-bubble' : 'bot-bubble'}">${text}</div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function addTyping() {
+    const div = document.createElement('div');
+    div.className = 'chat-msg bot';
+    div.id = 'typingIndicator';
+    div.innerHTML = `
+      <div class="chat-avatar">🤖</div>
+      <div class="chat-bubble bot-bubble">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>
+    `;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage(text) {
+    if (!text.trim()) return;
+    addMessage(text, true);
+    input.value = '';
+    addTyping();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      setTimeout(() => {
+        removeTyping();
+        addMessage(data.reply, false);
+      }, 800);
+    } catch (e) {
+      removeTyping();
+      addMessage('Sorry, something went wrong. Please try again! 😅', false);
+    }
+  }
+
+  sendBtn.addEventListener('click', () => sendMessage(input.value));
+  input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(input.value); });
+
+  // Quick suggestions
+  document.querySelectorAll('.chat-suggestion').forEach(btn => {
+    btn.addEventListener('click', () => sendMessage(btn.dataset.msg));
+  });
+})();
+</script>
+{% endblock %}

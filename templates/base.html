@@ -26,10 +26,12 @@
         {% if current_user.is_authenticated %}
         <li><a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}"><i class="fas fa-user"></i> Profile</a></li>
         <li><a href="/log" class="nav-link {% if request.path == '/log' %}active{% endif %}"><i class="fas fa-utensils"></i> Food Log</a></li>
+        <li><a href="/exercise" class="nav-link {% if request.path == '/exercise' %}active{% endif %}"><i class="fas fa-dumbbell"></i> Exercise</a></li>
         <li><a href="/weight" class="nav-link {% if request.path == '/weight' %}active{% endif %}"><i class="fas fa-weight-scale"></i> Weight</a></li>
         {% endif %}
         <li><a href="/suggest" class="nav-link {% if request.path == '/suggest' %}active{% endif %}"><i class="fas fa-lightbulb"></i> Suggestions</a></li>
         {% if current_user.is_authenticated %}
+        <li><a href="/chatbot" class="nav-link {% if request.path == '/chatbot' %}active{% endif %}"><i class="fas fa-robot"></i> AI Chat</a></li>
         <li><a href="/summary" class="nav-link {% if request.path == '/summary' %}active{% endif %}"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
         {% endif %}
       </ul>

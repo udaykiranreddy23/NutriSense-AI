@@ -86,6 +86,18 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
             UNIQUE(user_id, log_date)
         );
+
+        CREATE TABLE IF NOT EXISTS exercise_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            exercise_name TEXT NOT NULL,
+            duration_min INTEGER NOT NULL,
+            cal_burned INTEGER NOT NULL,
+            category TEXT DEFAULT 'general',
+            logged_at DATE DEFAULT (date('now')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
     """)
     conn.commit()
     conn.close()
@@ -319,6 +331,75 @@ def update_water_today(user_id: int, glasses: int):
            VALUES (?, ?, date('now'))
            ON CONFLICT(user_id, log_date) DO UPDATE SET glasses = ?""",
         (user_id, glasses, glasses)
+    )
+    conn.commit()
+    conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Exercise Tracking
+# ---------------------------------------------------------------------------
+def save_exercise_entry(user_id: int, exercise_name: str, duration: int,
+                        cal_burned: int, category: str = "general") -> int:
+    """Save an exercise log entry."""
+    conn = get_db()
+    cur = conn.execute(
+        """INSERT INTO exercise_logs
+           (user_id, exercise_name, duration_min, cal_burned, category)
+           VALUES (?, ?, ?, ?, ?)""",
+        (user_id, exercise_name, duration, cal_burned, category)
+    )
+    conn.commit()
+    entry_id = cur.lastrowid
+    conn.close()
+    return entry_id
+
+
+def get_exercise_log_today(user_id: int) -> List[Dict]:
+    """Get today's exercise log."""
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT * FROM exercise_logs WHERE user_id = ? AND logged_at = date('now')
+           ORDER BY created_at ASC""",
+        (user_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_exercise_stats(user_id: int) -> Dict:
+    """Get exercise stats for the user."""
+    conn = get_db()
+    today = conn.execute(
+        """SELECT COALESCE(SUM(cal_burned), 0) as cal,
+                  COALESCE(SUM(duration_min), 0) as mins,
+                  COUNT(*) as exercises
+           FROM exercise_logs WHERE user_id = ? AND logged_at = date('now')""",
+        (user_id,)
+    ).fetchone()
+    weekly = conn.execute(
+        """SELECT COALESCE(SUM(cal_burned), 0) as cal,
+                  COALESCE(SUM(duration_min), 0) as mins
+           FROM exercise_logs WHERE user_id = ?
+           AND logged_at >= date('now', '-6 days')""",
+        (user_id,)
+    ).fetchone()
+    conn.close()
+    return {
+        "today_cal": today["cal"],
+        "today_mins": today["mins"],
+        "today_exercises": today["exercises"],
+        "weekly_cal": weekly["cal"],
+        "weekly_mins": weekly["mins"],
+    }
+
+
+def delete_exercise_entry(entry_id: int, user_id: int):
+    """Delete a specific exercise entry."""
+    conn = get_db()
+    conn.execute(
+        "DELETE FROM exercise_logs WHERE id = ? AND user_id = ?",
+        (entry_id, user_id)
     )
     conn.commit()
     conn.close()
