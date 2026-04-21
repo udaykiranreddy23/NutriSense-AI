@@ -49,9 +49,9 @@
         <div class="dash-stat-label">Meals Logged</div>
       </div>
       <div class="dash-stat card fade-in delay-3">
-        <div class="dash-stat-icon">⚡</div>
-        <div class="dash-stat-value">{{ log | length if log | length <= 7 else 7 }}</div>
-        <div class="dash-stat-label">Day Streak</div>
+        <div class="dash-stat-icon">⚖️</div>
+        <div class="dash-stat-value">{{ weight_stats.current_weight or user.weight or '—' }}</div>
+        <div class="dash-stat-label">kg Current</div>
       </div>
     </div>
 
@@ -116,12 +116,38 @@
       </div>
     </div>
 
-    <!-- ========== ACTIVITY ========== -->
-    <div class="activity-card fade-in">
-      <div class="activity-icon">🏃</div>
-      <div class="activity-steps" id="stepCount">6,234</div>
-      <div class="activity-text">You've walked 4.2 km today!</div>
+    <!-- ========== WEIGHT TREND ========== -->
+    {% if weight_stats.entries and weight_stats.entries > 0 %}
+    <div class="card fade-in" style="padding:28px;">
+      <h3 style="color:var(--dark-green); margin-bottom:16px;">⚖️ Weight Summary</h3>
+      <div class="dash-stats" style="margin:0;">
+        <div class="dash-stat" style="box-shadow:none; background:#E8F5E9;">
+          <div class="dash-stat-icon">📊</div>
+          <div class="dash-stat-value">{{ weight_stats.current_bmi or '—' }}</div>
+          <div class="dash-stat-label">Current BMI</div>
+        </div>
+        <div class="dash-stat" style="box-shadow:none; background:#E3F2FD;">
+          <div class="dash-stat-icon">📝</div>
+          <div class="dash-stat-value">{{ weight_stats.entries }}</div>
+          <div class="dash-stat-label">Entries</div>
+        </div>
+        {% if weight_stats.total_change is defined %}
+        <div class="dash-stat" style="box-shadow:none; background:{% if weight_stats.total_change <= 0 %}#E8F5E9{% else %}#FFF3E0{% endif %};">
+          <div class="dash-stat-icon">{% if weight_stats.total_change < 0 %}📉{% elif weight_stats.total_change > 0 %}📈{% else %}➡️{% endif %}</div>
+          <div class="dash-stat-value" style="color:{% if weight_stats.total_change < 0 %}var(--green){% elif weight_stats.total_change > 0 %}var(--orange){% else %}#888{% endif %};">{{ weight_stats.total_change }} kg</div>
+          <div class="dash-stat-label">Total Change</div>
+        </div>
+        {% endif %}
+        <div class="dash-stat" style="box-shadow:none; background:#F3E5F5;">
+          <a href="/weight" style="text-decoration:none;">
+            <div class="dash-stat-icon">📈</div>
+            <div class="dash-stat-value" style="font-size:1rem;">View Chart →</div>
+            <div class="dash-stat-label">Weight History</div>
+          </a>
+        </div>
+      </div>
     </div>
+    {% endif %}
 
     <!-- ========== WEEKLY CHART ========== -->
     <div class="card fade-in" style="padding:28px;">
@@ -138,6 +164,13 @@
       <div class="tips-carousel" id="tipsCarousel">
         <div class="tip-slide">🥦 Eat more vegetables today</div>
       </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions fade-in" style="margin-top:24px;">
+      <a href="/log" class="btn btn-primary"><i class="fas fa-utensils"></i> Log Food</a>
+      <a href="/weight" class="btn btn-secondary"><i class="fas fa-weight-scale"></i> Log Weight</a>
+      <a href="/suggest" class="btn btn-secondary"><i class="fas fa-lightbulb"></i> Meal Ideas</a>
     </div>
 
   </div>
@@ -203,25 +236,33 @@
     });
   });
 
-  // Weekly chart
+  // Weekly chart — use real data from DB
   const chartEl = document.getElementById('weeklyChart');
+  const weeklyData = {{ weekly | tojson }};
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const today = new Date().getDay();
   const todayCal = {{ total_cal }};
-  // Generate sample data for past days
-  const weekData = days.map((d, i) => {
-    const dayIdx = (i + 1) % 7; // Mon=1 ... Sun=0
-    if (dayIdx === today) return todayCal;
-    if (dayIdx > today || (today === 0 && dayIdx > 0)) return 0;
-    return Math.round(1200 + Math.random() * 800);
+
+  // Build chart data from DB
+  const dayMap = {};
+  weeklyData.forEach(d => {
+    const dt = new Date(d.logged_at);
+    const dayIdx = dt.getDay();
+    dayMap[dayIdx] = d.total_cal;
   });
 
-  const maxCal = Math.max(...weekData, {{ target }});
+  const weekVals = days.map((d, i) => {
+    const dayIdx = (i + 1) % 7; // Mon=1...Sun=0
+    if (dayIdx === today) return todayCal || dayMap[dayIdx] || 0;
+    return dayMap[dayIdx] || 0;
+  });
+
+  const maxCal = Math.max(...weekVals, {{ target }}, 1);
   chartEl.innerHTML = days.map((d, i) => {
-    const h = maxCal > 0 ? (weekData[i] / maxCal) * 160 : 0;
+    const h = maxCal > 0 ? (weekVals[i] / maxCal) * 160 : 0;
     return `
       <div class="chart-bar-wrap">
-        <div class="chart-bar-value">${weekData[i]}</div>
+        <div class="chart-bar-value">${weekVals[i]}</div>
         <div class="chart-bar" style="height:${h}px;"></div>
         <div class="chart-bar-label">${d}</div>
       </div>

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Weight Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>⚖️ Weight Tracker</h1>
+  <p>Monitor your weight journey and track progress</p>
+</div>
+
+<div class="section">
+  <div class="container">
+    <!-- Current Stats Row -->
+    <div class="weight-stats-grid">
+      <div class="weight-stat-card card fade-in">
+        <div class="weight-stat-icon">⚖️</div>
+        <div class="weight-stat-value">{{ user.weight or 0 }} kg</div>
+        <div class="weight-stat-label">Current Weight</div>
+      </div>
+      <div class="weight-stat-card card fade-in delay-1">
+        <div class="weight-stat-icon">📊</div>
+        <div class="weight-stat-value">{{ stats.current_bmi or '—' }}</div>
+        <div class="weight-stat-label">Current BMI</div>
+      </div>
+      <div class="weight-stat-card card fade-in delay-2">
+        <div class="weight-stat-icon">
+          {% if stats.total_change is defined and stats.total_change < 0 %}📉
+          {% elif stats.total_change is defined and stats.total_change > 0 %}📈
+          {% else %}➡️{% endif %}
+        </div>
+        <div class="weight-stat-value {% if stats.total_change is defined %}{% if stats.total_change < 0 %}text-green{% elif stats.total_change > 0 %}text-orange{% endif %}{% endif %}">
+          {% if stats.total_change is defined %}{{ stats.total_change }} kg{% else %}—{% endif %}
+        </div>
+        <div class="weight-stat-label">Total Change</div>
+      </div>
+      <div class="weight-stat-card card fade-in delay-3">
+        <div class="weight-stat-icon">🎯</div>
+        <div class="weight-stat-value">{% if user.target_weight > 0 %}{{ user.target_weight }} kg{% else %}Not set{% endif %}</div>
+        <div class="weight-stat-label">Target Weight</div>
+      </div>
+    </div>
+
+    <!-- Goal Progress -->
+    {% if user.target_weight > 0 and stats.current_weight is defined %}
+    <div class="card fade-in" style="padding:28px; margin-bottom:32px;">
+      <h3 style="color:var(--dark-green); margin-bottom:16px;">🎯 Goal Progress</h3>
+      {% set start_w = stats.first_weight %}
+      {% set curr_w = stats.current_weight %}
+      {% set goal_w = user.target_weight %}
+      {% set total_needed = (start_w - goal_w) | abs %}
+      {% set done = (start_w - curr_w) | abs %}
+      {% set pct = ((done / total_needed) * 100) if total_needed > 0 else 0 %}
+      {% set pct = [pct, 100] | min %}
+      <div class="progress-header">
+        <span>{{ start_w }} kg → {{ goal_w }} kg</span>
+        <span>{{ pct | round(0) | int }}% done</span>
+      </div>
+      <div class="progress-bar" style="height:16px;">
+        <div class="progress-fill green" style="width:{{ pct }}%;"></div>
+      </div>
+      <p style="margin-top:12px; color:#666; font-size:0.9rem;">
+        {% if pct >= 100 %}
+        🎉 Congratulations! You've reached your goal!
+        {% else %}
+        {{ (curr_w - goal_w) | abs | round(1) }} kg remaining to reach your goal
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="weight-layout">
+      <!-- Log Weight Form -->
+      <div class="card fade-in" style="align-self:start;">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, #7C4DFF, #651FFF);">
+          <i class="fas fa-plus-circle"></i> Log Weight
+        </div>
+        <div class="card-body">
+          <form method="POST" id="weightForm">
+            <div class="form-group">
+              <label class="form-label" for="weight">Weight (kg)</label>
+              <input class="form-input" type="number" id="weight" name="weight" 
+                     placeholder="{{ user.weight or 70 }}" step="0.1" min="20" max="300" 
+                     value="{{ user.weight or '' }}" required
+                     style="font-size:1.5rem; text-align:center; font-weight:700;">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="note">Note (optional)</label>
+              <input class="form-input" type="text" id="note" name="note" placeholder="e.g. After morning walk" maxlength="200">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fas fa-save"></i> Save Entry
+            </button>
+          </form>
+          <div class="weight-quick-info">
+            <p>📝 <strong>{{ stats.entries or 0 }}</strong> total entries</p>
+            {% if stats.entries and stats.entries > 1 %}
+            <p>📅 Started at <strong>{{ stats.first_weight }} kg</strong></p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Weight Chart -->
+      <div class="card fade-in delay-1">
+        <div class="card-header-bar" style="background:linear-gradient(135deg, #00BCD4, #0097A7);">
+          <i class="fas fa-chart-line"></i> Weight History
+        </div>
+        <div class="card-body">
+          {% if history | length > 1 %}
+          <div class="weight-chart" id="weightChart"></div>
+          {% else %}
+          <div style="text-align:center; padding:40px 20px; color:#888;">
+            <div style="font-size:4rem; margin-bottom:16px;">📈</div>
+            <h3 style="color:var(--dark-green); margin-bottom:8px;">Start Tracking</h3>
+            <p>Log at least 2 weight entries to see your progress chart</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Weight History Table -->
+    {% if history %}
+    <div class="card fade-in" style="margin-top:32px;">
+      <div class="card-header-bar" style="background:linear-gradient(135deg, #FF6F00, #E65100);">
+        <i class="fas fa-history"></i> Recent Entries
+      </div>
+      <div class="card-body">
+        <div class="log-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Weight</th>
+                <th>BMI</th>
+                <th>Note</th>
+                <th>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for entry in history %}
+              <tr>
+                <td>📅 {{ entry.recorded_at }}</td>
+                <td style="font-weight:700;">{{ entry.weight_kg }} kg</td>
+                <td>
+                  <span class="bmi-badge {% if entry.bmi < 18.5 %}bmi-under{% elif entry.bmi < 25 %}bmi-normal{% elif entry.bmi < 30 %}bmi-over{% else %}bmi-obese{% endif %}">
+                    {{ entry.bmi }}
+                  </span>
+                </td>
+                <td style="color:#888;">{{ entry.note or '—' }}</td>
+                <td>
+                  {% if not loop.last %}
+                    {% set prev = history[loop.index] %}
+                    {% set diff = (entry.weight_kg - prev.weight_kg) | round(1) %}
+                    {% if diff < 0 %}
+                    <span style="color:var(--green); font-weight:700;">{{ diff }} kg ↓</span>
+                    {% elif diff > 0 %}
+                    <span style="color:var(--orange); font-weight:700;">+{{ diff }} kg ↑</span>
+                    {% else %}
+                    <span style="color:#888;">0 kg →</span>
+                    {% endif %}
+                  {% else %}
+                    <span style="color:#888;">First entry</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  // Weight chart
+  const chartEl = document.getElementById('weightChart');
+  if (!chartEl) return;
+
+  fetch('/api/weight-history')
+    .then(r => r.json())
+    .then(data => {
+      if (data.length < 2) return;
+
+      const weights = data.map(d => d.weight_kg);
+      const labels = data.map(d => {
+        const date = new Date(d.recorded_at);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+
+      const maxW = Math.max(...weights);
+      const minW = Math.min(...weights);
+      const range = maxW - minW || 1;
+      const chartHeight = 200;
+      const barWidth = Math.max(20, Math.min(50, 600 / data.length));
+
+      let html = '<div class="weight-chart-inner">';
+      
+      // Y-axis labels
+      html += '<div class="weight-chart-y">';
+      html += `<span>${maxW} kg</span>`;
+      html += `<span>${((maxW + minW) / 2).toFixed(1)} kg</span>`;
+      html += `<span>${minW} kg</span>`;
+      html += '</div>';
+
+      html += '<div class="weight-chart-bars">';
+      data.forEach((d, i) => {
+        const h = ((d.weight_kg - minW) / range) * (chartHeight - 40) + 20;
+        const isLast = i === data.length - 1;
+        html += `
+          <div class="weight-bar-wrap" style="width:${barWidth}px;">
+            <div class="weight-bar-value">${d.weight_kg}</div>
+            <div class="weight-bar ${isLast ? 'weight-bar-current' : ''}" style="height:${h}px;"></div>
+            <div class="weight-bar-label">${labels[i]}</div>
+          </div>
+        `;
+      });
+      html += '</div></div>';
+
+      chartEl.innerHTML = html;
+    });
+
+  // Fade-in on scroll
+  const fadeObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-in').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'all 0.6s ease';
+    fadeObserver.observe(el);
+  });
+})();
+</script>
+{% endblock %}

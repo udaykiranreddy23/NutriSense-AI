@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-container">
+    <!-- Left: Branding -->
+    <div class="auth-brand">
+      <div class="auth-brand-content">
+        <div class="auth-logo">🥗</div>
+        <h1>NutriSense <span>AI</span></h1>
+        <p>Your AI-powered nutrition companion. Track meals, monitor weight, and achieve your health goals.</p>
+        <div class="auth-features">
+          <div class="auth-feature"><i class="fas fa-check-circle"></i> Personalized meal plans</div>
+          <div class="auth-feature"><i class="fas fa-check-circle"></i> Weight tracking & BMI</div>
+          <div class="auth-feature"><i class="fas fa-check-circle"></i> 60+ Indian food database</div>
+          <div class="auth-feature"><i class="fas fa-check-circle"></i> Health dashboard & insights</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Auth Form -->
+    <div class="auth-form-section">
+      <!-- Tab Switcher -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="loginTab" onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab" id="signupTab" onclick="switchTab('signup')">Create Account</button>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" method="POST" action="/login">
+        <h2>Welcome Back! 👋</h2>
+        <p class="auth-subtitle">Sign in to continue your health journey</p>
+
+        <div class="form-group">
+          <label class="form-label" for="loginEmail"><i class="fas fa-envelope"></i> Email</label>
+          <input class="form-input" type="email" id="loginEmail" name="email" placeholder="yourname@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword"><i class="fas fa-lock"></i> Password</label>
+          <div class="password-wrap">
+            <input class="form-input" type="password" id="loginPassword" name="password" placeholder="Enter your password" required minlength="6">
+            <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+
+        <div class="auth-options">
+          <label class="auth-checkbox">
+            <input type="checkbox" name="remember"> Remember me
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block auth-submit">
+          <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+
+        <p class="auth-switch">Don't have an account? <a href="#" onclick="switchTab('signup'); return false;">Create one</a></p>
+      </form>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signupForm" method="POST" action="/signup" style="display:none;">
+        <h2>Create Account 🚀</h2>
+        <p class="auth-subtitle">Start your health transformation today</p>
+
+        <div class="form-group">
+          <label class="form-label" for="signupName"><i class="fas fa-user"></i> Full Name</label>
+          <input class="form-input" type="text" id="signupName" name="name" placeholder="Your full name" required minlength="2">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="signupEmail"><i class="fas fa-envelope"></i> Email</label>
+          <input class="form-input" type="email" id="signupEmail" name="email" placeholder="yourname@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="signupPassword"><i class="fas fa-lock"></i> Password</label>
+          <div class="password-wrap">
+            <input class="form-input" type="password" id="signupPassword" name="password" placeholder="Min 6 characters" required minlength="6" oninput="checkPasswordStrength(this.value)">
+            <button type="button" class="password-toggle" onclick="togglePassword('signupPassword', this)"><i class="fas fa-eye"></i></button>
+          </div>
+          <div class="password-strength" id="passwordStrength">
+            <div class="strength-bar" id="strengthBar"></div>
+          </div>
+          <div class="strength-text" id="strengthText"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+          <div class="password-wrap">
+            <input class="form-input" type="password" id="confirmPassword" name="confirm_password" placeholder="Re-enter password" required minlength="6">
+            <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword', this)"><i class="fas fa-eye"></i></button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block auth-submit">
+          <i class="fas fa-user-plus"></i> Create Account
+        </button>
+
+        <p class="auth-switch">Already have an account? <a href="#" onclick="switchTab('login'); return false;">Sign In</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchTab(tab) {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginTab = document.getElementById('loginTab');
+    const signupTab = document.getElementById('signupTab');
+
+    if (tab === 'login') {
+      loginForm.style.display = 'block';
+      signupForm.style.display = 'none';
+      loginTab.classList.add('active');
+      signupTab.classList.remove('active');
+    } else {
+      loginForm.style.display = 'none';
+      signupForm.style.display = 'block';
+      loginTab.classList.remove('active');
+      signupTab.classList.add('active');
+    }
+  }
+
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+  }
+
+  function checkPasswordStrength(password) {
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 10) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    const levels = [
+      { width: '0%', color: '#ddd', label: '' },
+      { width: '20%', color: '#F44336', label: 'Weak' },
+      { width: '40%', color: '#FF9800', label: 'Fair' },
+      { width: '60%', color: '#FFC107', label: 'Good' },
+      { width: '80%', color: '#8BC34A', label: 'Strong' },
+      { width: '100%', color: '#00C853', label: 'Excellent' }
+    ];
+
+    const level = levels[strength];
+    bar.style.width = level.width;
+    bar.style.background = level.color;
+    text.textContent = level.label;
+    text.style.color = level.color;
+  }
+</script>
+{% endblock %}

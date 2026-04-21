@@ -9,3 +9,5 @@ dist/
 build/
 .DS_Store
 Thumbs.db
+*.db
+.pytest_cache/

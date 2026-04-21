@@ -94,17 +94,19 @@
                 <th>Protein</th>
                 <th>Carbs</th>
                 <th>Fat</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {% for item in log %}
               <tr>
-                <td>{{ item.emoji }} {{ item.name | capitalize }}</td>
+                <td>{{ item.emoji }} {{ item.food_name | capitalize }}</td>
                 <td>{{ item.qty }}g</td>
                 <td style="color:var(--orange);font-weight:700;">{{ item.cal }}</td>
                 <td>{{ item.protein }}g</td>
                 <td>{{ item.carbs }}g</td>
                 <td>{{ item.fat }}g</td>
+                <td><a href="/delete-food/{{ item.id }}" style="color:var(--red);font-size:0.85rem;" title="Delete"><i class="fas fa-trash-alt"></i></a></td>
               </tr>
               {% endfor %}
               <tr class="total-row">
@@ -114,6 +116,7 @@
                 <td>{{ log | sum(attribute='protein') | round(1) }}g</td>
                 <td>{{ log | sum(attribute='carbs') | round(1) }}g</td>
                 <td>{{ log | sum(attribute='fat') | round(1) }}g</td>
+                <td></td>
               </tr>
             </tbody>
           </table>

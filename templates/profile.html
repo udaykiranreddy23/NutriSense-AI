@@ -18,42 +18,57 @@
         <form method="POST" id="profileForm">
           <div class="form-group">
             <label class="form-label" for="name">Full Name</label>
-            <input class="form-input" type="text" id="name" name="name" placeholder="Enter your full name" value="{{ request.form.get('name', '') }}" required>
+            <input class="form-input" type="text" id="name" name="name" placeholder="Enter your full name" value="{{ request.form.get('name', user.name) }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="gender">Gender</label>
+            <select class="form-select" id="gender" name="gender">
+              <option value="male" {% if (request.form.get('gender') or user.gender) == 'male' %}selected{% endif %}>👨 Male</option>
+              <option value="female" {% if (request.form.get('gender') or user.gender) == 'female' %}selected{% endif %}>👩 Female</option>
+              <option value="other" {% if (request.form.get('gender') or user.gender) == 'other' %}selected{% endif %}>🧑 Other</option>
+            </select>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="age">Age</label>
-              <input class="form-input" type="number" id="age" name="age" placeholder="25" min="1" max="120" value="{{ request.form.get('age', '') }}" required>
+              <input class="form-input" type="number" id="age" name="age" placeholder="25" min="1" max="120" value="{{ request.form.get('age', user.age) }}" required>
             </div>
             <div class="form-group">
               <label class="form-label" for="weight">Weight (kg)</label>
-              <input class="form-input" type="number" id="weight" name="weight" placeholder="70" min="20" max="300" step="0.1" value="{{ request.form.get('weight', '') }}" required>
+              <input class="form-input" type="number" id="weight" name="weight" placeholder="70" min="20" max="300" step="0.1" value="{{ request.form.get('weight', user.weight) }}" required>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="height">Height (cm)</label>
-            <input class="form-input" type="number" id="height" name="height" placeholder="170" min="50" max="250" value="{{ request.form.get('height', '') }}" required>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="height">Height (cm)</label>
+              <input class="form-input" type="number" id="height" name="height" placeholder="170" min="50" max="250" value="{{ request.form.get('height', user.height) }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="target_weight">Target Weight (kg)</label>
+              <input class="form-input" type="number" id="target_weight" name="target_weight" placeholder="65" min="0" max="300" step="0.1" value="{{ request.form.get('target_weight', user.target_weight) }}">
+            </div>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="goal">Health Goal</label>
             <select class="form-select" id="goal" name="goal">
-              <option value="lose" {% if request.form.get('goal') == 'lose' %}selected{% endif %}>🔥 Weight Loss</option>
-              <option value="gain" {% if request.form.get('goal') == 'gain' %}selected{% endif %}>💪 Muscle Gain</option>
-              <option value="maintain" {% if request.form.get('goal') == 'maintain' or not request.form.get('goal') %}selected{% endif %}>⚖️ Maintain Weight</option>
-              <option value="diabetes" {% if request.form.get('goal') == 'diabetes' %}selected{% endif %}>🩺 Manage Diabetes</option>
+              {% for key, val in goals.items() %}
+              <option value="{{ key }}" {% if (request.form.get('goal') or user.goal) == key %}selected{% endif %}>{{ val.label }}</option>
+              {% endfor %}
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="activity">Activity Level</label>
             <select class="form-select" id="activity" name="activity">
-              <option value="sedentary" {% if request.form.get('activity') == 'sedentary' %}selected{% endif %}>🛋️ Sedentary</option>
-              <option value="light" {% if request.form.get('activity') == 'light' %}selected{% endif %}>🚶 Light Active</option>
-              <option value="moderate" {% if request.form.get('activity') == 'moderate' or not request.form.get('activity') %}selected{% endif %}>🏃 Moderate Active</option>
-              <option value="very_active" {% if request.form.get('activity') == 'very_active' %}selected{% endif %}>⚡ Very Active</option>
+              <option value="sedentary" {% if (request.form.get('activity') or user.activity) == 'sedentary' %}selected{% endif %}>🛋️ Sedentary (desk job)</option>
+              <option value="light" {% if (request.form.get('activity') or user.activity) == 'light' %}selected{% endif %}>🚶 Light Active (1-2 days/week)</option>
+              <option value="moderate" {% if (request.form.get('activity') or user.activity) == 'moderate' %}selected{% endif %}>🏃 Moderate Active (3-5 days/week)</option>
+              <option value="very_active" {% if (request.form.get('activity') or user.activity) == 'very_active' %}selected{% endif %}>⚡ Very Active (6-7 days/week)</option>
+              <option value="extreme" {% if (request.form.get('activity') or user.activity) == 'extreme' %}selected{% endif %}>🔥 Extreme (athlete/laborer)</option>
             </select>
           </div>
 
@@ -99,9 +114,9 @@
           <div class="cal-label">calories / day</div>
           <div class="pie-chart"></div>
           <div class="pie-legend">
-            <span><span class="pie-dot" style="background:var(--purple)"></span> Carbs 50%</span>
-            <span><span class="pie-dot" style="background:var(--blue)"></span> Protein 25%</span>
-            <span><span class="pie-dot" style="background:#F57F17"></span> Fat 25%</span>
+            <span><span class="pie-dot" style="background:var(--purple)"></span> Carbs {{ result.carbs_pct }}%</span>
+            <span><span class="pie-dot" style="background:var(--blue)"></span> Protein {{ result.protein_pct }}%</span>
+            <span><span class="pie-dot" style="background:#F57F17"></span> Fat {{ result.fat_pct }}%</span>
           </div>
         </div>
       </div>
@@ -132,7 +147,7 @@
       <!-- Health Tips -->
       <div class="result-card fade-in delay-3">
         <div class="card-header-bar" style="background:linear-gradient(135deg, #4CAF50, #2E7D32);">
-          <i class="fas fa-lightbulb"></i> Personalized Tips
+          <i class="fas fa-lightbulb"></i> {{ result.goal_label }} Tips
         </div>
         <div class="card-body">
           <ul class="tips-list">
@@ -143,9 +158,14 @@
         </div>
       </div>
 
-      <a href="/log" class="btn btn-primary btn-block" style="margin-top:16px;">
-        🍽️ Start Logging Food →
-      </a>
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <a href="/log" class="btn btn-primary" style="flex:1; justify-content:center;">
+          🍽️ Log Food
+        </a>
+        <a href="/weight" class="btn btn-secondary" style="flex:1; justify-content:center;">
+          ⚖️ Track Weight
+        </a>
+      </div>
       {% elif result and result.error %}
       <div class="result-card">
         <div class="card-body" style="text-align:center;padding:40px;">

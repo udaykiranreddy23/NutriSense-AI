@@ -23,13 +23,61 @@
       </button>
       <ul class="nav-links" id="navLinks">
         <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
+        {% if current_user.is_authenticated %}
         <li><a href="/profile" class="nav-link {% if request.path == '/profile' %}active{% endif %}"><i class="fas fa-user"></i> Profile</a></li>
         <li><a href="/log" class="nav-link {% if request.path == '/log' %}active{% endif %}"><i class="fas fa-utensils"></i> Food Log</a></li>
+        <li><a href="/weight" class="nav-link {% if request.path == '/weight' %}active{% endif %}"><i class="fas fa-weight-scale"></i> Weight</a></li>
+        {% endif %}
         <li><a href="/suggest" class="nav-link {% if request.path == '/suggest' %}active{% endif %}"><i class="fas fa-lightbulb"></i> Suggestions</a></li>
-        <li><a href="/summary" class="nav-link {% if request.path == '/summary' %}active{% endif %}"><i class="fas fa-chart-pie"></i> Summary</a></li>
+        {% if current_user.is_authenticated %}
+        <li><a href="/summary" class="nav-link {% if request.path == '/summary' %}active{% endif %}"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+        {% endif %}
       </ul>
+      <div class="nav-auth">
+        {% if current_user.is_authenticated %}
+        <div class="nav-user-dropdown" id="userDropdown">
+          <button class="nav-user-btn" id="userBtn">
+            <div class="nav-avatar">{{ current_user.data.name[0] | upper }}</div>
+            <span class="nav-user-name">{{ current_user.data.name.split(' ')[0] }}</span>
+            <i class="fas fa-chevron-down" style="font-size:0.7rem;opacity:0.7;"></i>
+          </button>
+          <div class="nav-dropdown-menu" id="dropdownMenu">
+            <div class="dropdown-user-info">
+              <div class="dropdown-avatar">{{ current_user.data.name[0] | upper }}</div>
+              <div>
+                <div class="dropdown-name">{{ current_user.data.name }}</div>
+                <div class="dropdown-email">{{ current_user.data.email }}</div>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="/profile" class="dropdown-item"><i class="fas fa-user-edit"></i> Edit Profile</a>
+            <a href="/weight" class="dropdown-item"><i class="fas fa-weight-scale"></i> Weight Tracker</a>
+            <a href="/summary" class="dropdown-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <div class="dropdown-divider"></div>
+            <a href="/logout" class="dropdown-item dropdown-logout"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="/auth" class="nav-signin-btn"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+        {% endif %}
+      </div>
     </div>
   </nav>
+
+  <!-- ========== FLASH MESSAGES ========== -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container" id="flashContainer">
+    {% for category, message in messages %}
+    <div class="flash-message flash-{{ category }}">
+      <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% elif category == 'info' %}fa-info-circle{% else %}fa-bell{% endif %}"></i>
+      <span>{{ message }}</span>
+      <button class="flash-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
 
   <!-- ========== MAIN CONTENT ========== -->
   <main>
@@ -73,6 +121,29 @@
         document.getElementById('navLinks').classList.remove('show');
       });
     });
+
+    // User dropdown toggle
+    const userBtn = document.getElementById('userBtn');
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (userBtn && dropdownMenu) {
+      userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdownMenu.classList.toggle('show');
+      });
+      document.addEventListener('click', function() {
+        dropdownMenu.classList.remove('show');
+      });
+    }
+
+    // Auto-dismiss flash messages
+    setTimeout(function() {
+      const flashContainer = document.getElementById('flashContainer');
+      if (flashContainer) {
+        flashContainer.style.opacity = '0';
+        flashContainer.style.transform = 'translateY(-20px)';
+        setTimeout(() => flashContainer.remove(), 500);
+      }
+    }, 5000);
   </script>
   {% block scripts %}{% endblock %}
 </body>

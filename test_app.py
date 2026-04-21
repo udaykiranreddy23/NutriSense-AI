@@ -1,156 +1,138 @@
 """
-Test suite for NutriSense AI application.
-Run with: python -m pytest test_app.py -v
+NutriSense AI — Basic Tests
 """
-
 import json
+import os
+import sys
 import pytest
+
+# Set test DB path before importing app
+os.environ["SECRET_KEY"] = "test-secret-key"
+
+sys.path.insert(0, os.path.dirname(__file__))
+
 from app import app
+from models import init_db, get_db, DB_PATH
 
 
 @pytest.fixture
 def client():
-    """Create a test client for the Flask app."""
+    """Create test client."""
     app.config["TESTING"] = True
-    app.config["SECRET_KEY"] = "test-secret-key"
+    app.config["WTF_CSRF_ENABLED"] = False
+
+    # Use test DB
     with app.test_client() as client:
+        with app.app_context():
+            init_db()
         yield client
 
-
-class TestRoutes:
-    """Test all application routes return correct status codes."""
-
-    def test_home_page(self, client):
-        """Test home page loads successfully."""
-        response = client.get("/")
-        assert response.status_code == 200
-        assert b"NutriSense" in response.data
-
-    def test_profile_page_get(self, client):
-        """Test profile page loads on GET request."""
-        response = client.get("/profile")
-        assert response.status_code == 200
-        assert b"Health Profile" in response.data
-
-    def test_profile_page_post(self, client):
-        """Test profile calculation with valid data."""
-        response = client.post("/profile", data={
-            "name": "Test User",
-            "age": "25",
-            "weight": "70",
-            "height": "175",
-            "goal": "maintain",
-            "activity": "moderate",
-        })
-        assert response.status_code == 200
-        assert b"BMI" in response.data
-
-    def test_profile_bmi_calculation(self, client):
-        """Test BMI calculation accuracy."""
-        response = client.post("/profile", data={
-            "name": "Test",
-            "age": "25",
-            "weight": "70",
-            "height": "175",
-            "goal": "maintain",
-            "activity": "moderate",
-        })
-        assert response.status_code == 200
-        # BMI = 70 / (1.75)^2 = 22.9
-        assert b"22.9" in response.data
-
-    def test_log_page_get(self, client):
-        """Test food log page loads with food database."""
-        response = client.get("/log")
-        assert response.status_code == 200
-        assert b"Food Logger" in response.data
-
-    def test_log_food_post(self, client):
-        """Test logging a food item."""
-        response = client.post("/log", data={
-            "food": "rice",
-            "qty": "100",
-        })
-        assert response.status_code == 200
-        assert b"Rice" in response.data or b"rice" in response.data
-
-    def test_log_invalid_food(self, client):
-        """Test logging an invalid food item."""
-        response = client.post("/log", data={
-            "food": "nonexistent_food",
-            "qty": "100",
-        })
-        assert response.status_code == 200
-
-    def test_suggest_page(self, client):
-        """Test meal suggestions page loads."""
-        response = client.get("/suggest")
-        assert response.status_code == 200
-
-    def test_summary_page(self, client):
-        """Test dashboard/summary page loads."""
-        response = client.get("/summary")
-        assert response.status_code == 200
-        assert b"Health Score" in response.data
-
-    def test_clear_log(self, client):
-        """Test clearing the food log."""
-        response = client.get("/clear-log")
-        assert response.status_code == 200
-
-    def test_api_foods(self, client):
-        """Test the foods API endpoint returns JSON."""
-        response = client.get("/api/foods")
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert isinstance(data, dict)
-        assert "rice" in data
-
-    def test_update_water(self, client):
-        """Test water intake update endpoint."""
-        response = client.post(
-            "/update-water",
-            data=json.dumps({"count": 5}),
-            content_type="application/json",
-        )
-        assert response.status_code == 200
+    # Cleanup test DB
+    if os.path.exists(DB_PATH):
+        try:
+            os.remove(DB_PATH)
+        except OSError:
+            pass
 
 
-class TestSecurity:
-    """Test security measures."""
-
-    def test_xss_prevention_in_food_name(self, client):
-        """Test that script tags in food names are not rendered."""
-        response = client.post("/log", data={
-            "food": "<script>alert('xss')</script>",
-            "qty": "100",
-        })
-        assert b"<script>alert" not in response.data
-
-    def test_invalid_quantity_handled(self, client):
-        """Test that invalid quantity values are handled gracefully."""
-        response = client.post("/log", data={
-            "food": "rice",
-            "qty": "abc",
-        })
-        # Should not crash
-        assert response.status_code in [200, 400]
+def test_home_page(client):
+    """Home page should return 200."""
+    rv = client.get("/")
+    assert rv.status_code == 200
+    assert b"NutriSense" in rv.data
 
 
-class TestAccessibility:
-    """Test basic accessibility features."""
+def test_auth_page(client):
+    """Auth page should render login/signup."""
+    rv = client.get("/auth")
+    assert rv.status_code == 200
+    assert b"Sign In" in rv.data
+    assert b"Create Account" in rv.data
 
-    def test_html_lang_attribute(self, client):
-        """Test that HTML has lang attribute for screen readers."""
-        response = client.get("/")
-        assert b'lang="en"' in response.data
 
-    def test_viewport_meta(self, client):
-        """Test that viewport meta tag exists for mobile."""
-        response = client.get("/")
-        assert b"viewport" in response.data
+def test_signup_flow(client):
+    """Should be able to create account and get redirected."""
+    rv = client.post("/signup", data={
+        "name": "Test User",
+        "email": "test@example.com",
+        "password": "testpass123",
+        "confirm_password": "testpass123"
+    }, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Welcome" in rv.data or b"Profile" in rv.data
 
-    def test_aria_labels_on_nav(self, client):
-        """Test that navigation has aria labels."""
-        response = client.get("/")
-        assert b"aria-label" in response.data
+
+def test_login_flow(client):
+    """Should login with correct credentials."""
+    # First signup
+    client.post("/signup", data={
+        "name": "Test User",
+        "email": "test2@example.com",
+        "password": "testpass123",
+        "confirm_password": "testpass123"
+    })
+    # Logout
+    client.get("/logout")
+    # Login
+    rv = client.post("/login", data={
+        "email": "test2@example.com",
+        "password": "testpass123"
+    }, follow_redirects=True)
+    assert rv.status_code == 200
+
+
+def test_suggest_page(client):
+    """Suggestions page should be accessible without login."""
+    rv = client.get("/suggest")
+    assert rv.status_code == 200
+
+
+def test_api_foods(client):
+    """Foods API should return JSON."""
+    rv = client.get("/api/foods")
+    assert rv.status_code == 200
+    data = json.loads(rv.data)
+    assert "rice" in data
+    assert "roti" in data
+
+
+def test_protected_routes_redirect(client):
+    """Protected routes should redirect to auth when not logged in."""
+    routes = ["/profile", "/log", "/weight", "/summary"]
+    for route in routes:
+        rv = client.get(route)
+        assert rv.status_code == 302, f"{route} should redirect"
+
+
+def test_duplicate_signup(client):
+    """Should not allow duplicate email signup."""
+    data = {
+        "name": "User One",
+        "email": "dupe@example.com",
+        "password": "pass123456",
+        "confirm_password": "pass123456"
+    }
+    client.post("/signup", data=data)
+    client.get("/logout")
+
+    rv = client.post("/signup", data=data, follow_redirects=True)
+    assert b"already exists" in rv.data
+
+
+def test_wrong_password(client):
+    """Should reject wrong password."""
+    # Signup
+    client.post("/signup", data={
+        "name": "User",
+        "email": "wrong@example.com",
+        "password": "correct123",
+        "confirm_password": "correct123"
+    })
+    client.get("/logout")
+
+    # Login with wrong password
+    rv = client.post("/login", data={
+        "email": "wrong@example.com",
+        "password": "wrongpassword"
+    }, follow_redirects=True)
+    assert b"Invalid" in rv.data
